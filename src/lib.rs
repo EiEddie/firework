@@ -1,14 +1,39 @@
 use std::f64::consts::TAU;
+use std::ops::{Add, AddAssign, Mul};
 
 use colorsys::{Hsl, Rgb};
 use rand::{self, Rng};
 mod arg;
+use arg::*;
 
 #[derive(Debug, Clone, Copy)]
 struct Vec2<T>(T, T);
 
 type Vec2f = Vec2<f64>;
 type Vec2i = Vec2<i32>;
+
+impl Mul<f64> for Vec2<f64> {
+	type Output = Self;
+
+	fn mul(self, rhs: f64) -> Self::Output {
+		Vec2(self.0 * rhs, self.1 * rhs)
+	}
+}
+
+impl Add for Vec2<f64> {
+	type Output = Self;
+
+	fn add(self, rhs: Self) -> Self::Output {
+		Vec2(self.0 + rhs.0, self.1 + rhs.1)
+	}
+}
+
+impl AddAssign for Vec2<f64> {
+	fn add_assign(&mut self, rhs: Self) {
+		self.0 += rhs.0;
+		self.1 += rhs.1;
+	}
+}
 
 #[derive(Debug)]
 struct BigRocket {
@@ -97,7 +122,7 @@ impl SmallRocket {
 
 		Self { pos,
 		       mas: Self::MASS,
-		       vel: Vec2(v_norm * v_deg.cos(), v_norm * v_deg.sin()),
+		       vel: Vec2(v_deg.cos(), v_deg.sin()) * v_norm,
 		       color,
 		       spread: Self::TRAIL_SPREAD,
 		       age: Self::AGE }
@@ -137,5 +162,34 @@ impl Glitters {
 		Self { big_rockets,
 		       small_rockets: Vec::new(),
 		       particles: Vec::new() }
+	}
+
+	fn update(&mut self, dt: f64) {
+		// 删除气数已尽的小烟花
+		self.small_rockets.retain(|x| x.age > 0.);
+
+		// 移除符合条件的爆炸的大烟花
+		// FIXME: 注意测试
+		self.big_rockets
+		    .retain(|x| !x.explode(30, &mut self.small_rockets));
+
+		// 大烟花的运动
+		for brkt in &mut self.big_rockets {
+			brkt.pos += brkt.vel * dt;
+			brkt.vel += Vec2(0., -G_PHY * dt);
+		}
+
+		// 小烟花的运动
+		for srkt in &mut self.small_rockets {
+			srkt.pos += srkt.vel * dt;
+			// 小烟花受阻力:
+			// f = -kv => ma = -g - kv => v = v_0 + (-g/m - k/m*v)*dt
+			let a_f = srkt.vel * (-DRAG_PHY / srkt.mas);
+			srkt.vel += (Vec2(0., -G_PHY / srkt.mas) + a_f) * dt;
+
+			srkt.age -= dt;
+		}
+
+		// todo: 生成可见元素
 	}
 }
