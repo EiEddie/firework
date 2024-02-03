@@ -31,6 +31,11 @@ impl crate::SmallRocket {
 	pub(crate) const TRAIL_SPREAD: f64 = 1.;
 }
 
+impl crate::Particle {
+	/// 寿命
+	pub(crate) const AGE: f64 = 1.;
+}
+
 pub(crate) trait CanvasSize {
 	fn width(&self) -> u32;
 	fn height(&self) -> u32;

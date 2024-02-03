@@ -1,7 +1,7 @@
 use std::f64::consts::TAU;
 use std::ops::{Add, AddAssign, Mul};
 
-use colorsys::{Hsl, Rgb};
+use colorsys::Rgb;
 use rand::{self, Rng};
 mod arg;
 use arg::*;
@@ -45,7 +45,7 @@ struct BigRocket {
 	vel: Vec2f,
 
 	/// 颜色
-	color: Hsl,
+	color: Rgb,
 
 	/// 扩散范围
 	/// 可以制作模糊的轨迹
@@ -62,7 +62,7 @@ struct SmallRocket {
 	vel: Vec2f,
 
 	/// 颜色
-	color: Hsl,
+	color: Rgb,
 
 	/// 扩散范围
 	/// 可以制作模糊的轨迹
@@ -88,7 +88,7 @@ impl BigRocket {
 		Self { pos:    Vec2(p_x, 0.),
 		       mas:    Self::MASS,
 		       vel:    Vec2(v_x, v_y),
-		       color:  Rgb::from((c_r, c_g, c_b)).into(),
+		       color:  Rgb::from((c_r, c_g, c_b)),
 		       spread: Self::TRAIL_SPREAD, }
 	}
 
@@ -114,7 +114,7 @@ impl BigRocket {
 }
 
 impl SmallRocket {
-	fn new(pos: Vec2f, color: Hsl) -> Self {
+	fn new(pos: Vec2f, color: Rgb) -> Self {
 		let mut rng = rand::thread_rng();
 
 		let v_norm = rng.gen_range(Self::SPEED_RANGE);
@@ -138,10 +138,23 @@ struct Particle {
 	pos: Vec2i,
 
 	/// 颜色
-	color: Hsl,
+	color: Rgb,
 
 	/// 持续时间
 	age: f64,
+}
+
+impl Particle {
+	fn new(pos: Vec2f, color: Rgb, size: &impl CanvasSize) -> Self {
+		let p_x = (pos.0 as i32).clamp(0, size.width() as i32);
+		let p_y = (pos.1 as i32).clamp(0, size.height() as i32);
+
+		// todo: 提高明度
+
+		Self { pos: Vec2(p_x, p_y),
+		       color,
+		       age: Self::AGE }
+	}
 }
 
 /// 管理和更新所有可见粒子与烟花
