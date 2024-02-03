@@ -103,3 +103,39 @@ impl SmallRocket {
 		       age: Self::AGE }
 	}
 }
+
+/// 烟花释放的发光粒子
+///
+/// 可显示在屏幕上
+#[derive(Debug)]
+struct Particle {
+	/// 位置
+	pos: Vec2i,
+
+	/// 颜色
+	color: Hsl,
+
+	/// 持续时间
+	age: f64,
+}
+
+/// 管理和更新所有可见粒子与烟花
+struct Glitters {
+	big_rockets:   Vec<BigRocket>,
+	small_rockets: Vec<SmallRocket>,
+	particles:     Vec<Particle>,
+}
+
+impl Glitters {
+	/// 燃放 `cnt` 数量的烟花, 开始模拟
+	fn new(cnt: u32, size: &impl arg::CanvasSize) -> Self {
+		let mut big_rockets: Vec<BigRocket> = Vec::new();
+		for _ in 0..cnt {
+			big_rockets.push(BigRocket::launch(size));
+		}
+
+		Self { big_rockets,
+		       small_rockets: Vec::new(),
+		       particles: Vec::new() }
+	}
+}
