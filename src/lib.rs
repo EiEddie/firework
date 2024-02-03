@@ -1,8 +1,10 @@
+use std::f64::consts::TAU;
+
 use colorsys::{Hsl, Rgb};
 use rand::{self, Rng};
 mod arg;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct Vec2<T>(T, T);
 
 type Vec2f = Vec2<f64>;
@@ -63,5 +65,41 @@ impl BigRocket {
 		       vel:    Vec2(v_x, v_y),
 		       color:  Rgb::from((c_r, c_g, c_b)).into(),
 		       spread: Self::TRAIL_SPREAD, }
+	}
+
+	/// 大烟花火箭爆炸
+	///
+	/// 一个大的火箭爆炸时会生成 `cnt` 个小火箭, 储存在 `dst` 内
+	///
+	/// Returns
+	///
+	/// 返回火箭是否爆炸
+	fn explode(&self, cnt: u32, dst: &mut Vec<SmallRocket>) -> bool {
+		// 火箭还在上升
+		// 升到最高点爆炸
+		if self.vel.1 > 0. {
+			return false;
+		}
+
+		for _ in 0..cnt {
+			dst.push(SmallRocket::new(self.pos, self.color.clone()));
+		}
+		return true;
+	}
+}
+
+impl SmallRocket {
+	fn new(pos: Vec2f, color: Hsl) -> Self {
+		let mut rng = rand::thread_rng();
+
+		let v_norm = rng.gen_range(Self::SPEED_RANGE);
+		let v_deg = rng.gen_range(0.0..TAU);
+
+		Self { pos,
+		       mas: Self::MASS,
+		       vel: Vec2(v_norm * v_deg.cos(), v_norm * v_deg.sin()),
+		       color,
+		       spread: Self::TRAIL_SPREAD,
+		       age: Self::AGE }
 	}
 }
