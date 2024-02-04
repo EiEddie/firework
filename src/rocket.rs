@@ -48,7 +48,7 @@ impl BigRocket {
 		let p_x = rng_do(|rng| rng.gen_range(0.0..size.width() as f64));
 
 		let v_x = rng_do(|rng| rng.gen_range(Self::SPEED_RANGE_X));
-		let v_y = -rng_do(|rng| rng.gen_range(Self::SPEED_RANGE_Y));
+		let v_y = rng_do(|rng| rng.gen_range(Self::SPEED_RANGE_Y));
 
 		let c_r = rng_do(|rng| rng.gen_range(Self::COLOR_RANGE.0));
 		let c_g = rng_do(|rng| rng.gen_range(Self::COLOR_RANGE.1));
@@ -120,7 +120,9 @@ impl Particle {
 		self.color.clone()
 	}
 
-	fn from_big_rocket(big_rocket: &BigRocket, size: &impl CanvasSize) -> Self {
+	// FIXME: 物理坐标系和显示坐标系不一致, 物理坐标系原点在左下角, 而显示坐标系在左上角
+
+	fn try_from_big_rocket(big_rocket: &BigRocket, size: &impl CanvasSize) -> Option<Self> {
 		// 逆时针旋转 90 deg 的速度
 		let v_ver = Vec2(big_rocket.vel.1, -big_rocket.vel.0);
 
@@ -131,15 +133,22 @@ impl Particle {
 
 		let p = p_delta + big_rocket.pos;
 
-		let p_x = (p.0 as i32).clamp(0, size.width() as i32);
-		let p_y = (p.1 as i32).clamp(0, size.height() as i32);
+		let p_x = p.0 as i32;
+		if 0 > p_x || p_x > size.width() as i32 {
+			return None;
+		}
 
-		Self { pos:   Vec2(p_x, p_y),
+		let p_y = p.1 as i32;
+		if 0 > p_y || p_y > size.height() as i32 {
+			return None;
+		}
+
+		Some(Self { pos:   Vec2(p_x, p_y),
 		       color: big_rocket.color.clone(),
-		       age:   Self::AGE, }
+		       age:   Self::AGE, })
 	}
 
-	fn from_small_rocket(small_rocket: &SmallRocket, size: &impl CanvasSize) -> Self {
+	fn try_from_small_rocket(small_rocket: &SmallRocket, size: &impl CanvasSize) -> Option<Self> {
 		// 逆时针旋转 90 deg 的速度
 		let v_ver = Vec2(small_rocket.vel.1, -small_rocket.vel.0);
 
@@ -150,14 +159,21 @@ impl Particle {
 
 		let p = p_delta + small_rocket.pos;
 
-		let p_x = (p.0 as i32).clamp(0, size.width() as i32);
-		let p_y = (p.1 as i32).clamp(0, size.height() as i32);
+		let p_x = p.0 as i32;
+		if 0 > p_x || p_x > size.width() as i32 {
+			return None;
+		}
+
+		let p_y = p.1 as i32;
+		if 0 > p_y || p_y > size.height() as i32 {
+			return None;
+		}
 
 		// TODO: 随寿命降低, 发出的光逐渐变暗
 
-		Self { pos:   Vec2(p_x, p_y),
+		Some(Self { pos:   Vec2(p_x, p_y),
 		       color: small_rocket.color.clone(),
-		       age:   Self::AGE, }
+		       age:   Self::AGE, })
 	}
 }
 
@@ -213,37 +229,44 @@ impl Glitters {
 		}
 	}
 
-	/// 可见粒子的更新
+	/// 可见粒子寿命的更新
 	///
 	/// - 减少粒子的寿命
-	/// - 生成大小火箭的尾迹
 	/// - 尾迹的消失:
 	///   删除超出寿命的粒子
-	/// - 小火箭尾迹的淡出:
-	///   临近寿命的小火箭会更少地生成粒子
-	pub fn update_glitters(&mut self, dt: f64, size: &impl arg::CanvasSize) {
-		// 更新尾迹寿命
+	pub fn update_glitters(&mut self, dt: f64) {
 		// 移除超出寿命的尾迹
 		self.particles.retain(|x| x.age > 0.);
 
-		// 为大火箭生成尾迹
-		for brkt in &self.big_rockets {
-			self.particles.push(Particle::from_big_rocket(brkt, size));
+		// 减少粒子寿命
+		for part in &mut self.particles {
+			part.age -= dt;
 		}
+	}
 
+	/// 生成可见粒子
+	///
+	/// - 生成大小火箭的尾迹
+	/// - 小火箭尾迹的淡出:
+	///   临近寿命的小火箭会更少地生成粒子
+	pub fn gen_glitters(&mut self, size: &impl arg::CanvasSize) {
 		// 为小火箭生成尾迹
 		for srkt in &self.small_rockets {
 			// 根据给定的函数对应的概率生成
 			// 当火箭寿命将尽时, 将生成更少的尾迹
 			// TODO: 先判断寿命是否大于 1 可以减少平方根的开销
 			if rng_do(|rng| rng.gen::<f64>()) < srkt.age.sqrt().clamp(0., 1.) {
-				self.particles.push(Particle::from_small_rocket(srkt, size));
+				if let Some(part) = Particle::try_from_small_rocket(srkt, size) {
+					self.particles.push(part);
+				}
 			}
 		}
 
-		// 减少粒子寿命
-		for part in &mut self.particles {
-			part.age -= dt;
+		// 为大火箭生成尾迹
+		for brkt in &self.big_rockets {
+			if let Some(part) = Particle::try_from_big_rocket(brkt, size) {
+				self.particles.push(part);
+			}
 		}
 	}
 
