@@ -144,8 +144,8 @@ impl Particle {
 		}
 
 		Some(Self { pos:   Vec2(p_x, p_y),
-		       color: big_rocket.color.clone(),
-		       age:   Self::AGE, })
+		            color: big_rocket.color.clone(),
+		            age:   Self::AGE, })
 	}
 
 	fn try_from_small_rocket(small_rocket: &SmallRocket, size: &impl CanvasSize) -> Option<Self> {
@@ -172,8 +172,8 @@ impl Particle {
 		// TODO: 随寿命降低, 发出的光逐渐变暗
 
 		Some(Self { pos:   Vec2(p_x, p_y),
-		       color: small_rocket.color.clone(),
-		       age:   Self::AGE, })
+		            color: small_rocket.color.clone(),
+		            age:   Self::AGE, })
 	}
 }
 
