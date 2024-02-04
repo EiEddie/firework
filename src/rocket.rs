@@ -1,10 +1,13 @@
+#![allow(dead_code)]
+// TODO
+
 use std::f64::consts::TAU;
 
 use colorsys::Rgb;
-use rand::{self, Rng};
+use rand::Rng;
 
 use crate::arg::{self, *};
-use crate::{Vec2, Vec2f, Vec2i};
+use crate::{rng_do, Vec2, Vec2f, Vec2i};
 
 #[derive(Debug)]
 pub(crate) struct BigRocket {
@@ -45,16 +48,14 @@ pub(crate) struct SmallRocket {
 
 impl BigRocket {
 	fn launch(size: &impl arg::CanvasSize) -> Self {
-		let mut rng = rand::thread_rng();
+		let p_x = rng_do(|rng| rng.gen_range(0.0..size.width() as f64));
 
-		let p_x = rng.gen_range(0.0..size.width() as f64);
+		let v_x = rng_do(|rng| rng.gen_range(Self::SPEED_RANGE_X));
+		let v_y = -rng_do(|rng| rng.gen_range(Self::SPEED_RANGE_Y));
 
-		let v_x = rng.gen_range(Self::SPEED_RANGE_X);
-		let v_y = -rng.gen_range(Self::SPEED_RANGE_Y);
-
-		let c_r = rng.gen_range(Self::COLOR_RANGE.0);
-		let c_g = rng.gen_range(Self::COLOR_RANGE.1);
-		let c_b = rng.gen_range(Self::COLOR_RANGE.2);
+		let c_r = rng_do(|rng| rng.gen_range(Self::COLOR_RANGE.0));
+		let c_g = rng_do(|rng| rng.gen_range(Self::COLOR_RANGE.1));
+		let c_b = rng_do(|rng| rng.gen_range(Self::COLOR_RANGE.2));
 
 		Self { pos:    Vec2(p_x, 0.),
 		       mas:    Self::MASS,
@@ -67,7 +68,7 @@ impl BigRocket {
 	///
 	/// 一个大的火箭爆炸时会生成 `cnt` 个小火箭, 储存在 `dst` 内
 	///
-	/// Returns
+	/// # Returns
 	///
 	/// 返回火箭是否爆炸
 	fn explode(&self, cnt: u32, dst: &mut Vec<SmallRocket>) -> bool {
@@ -86,10 +87,8 @@ impl BigRocket {
 
 impl SmallRocket {
 	fn from_big_rocket(big_rocket: &BigRocket) -> Self {
-		let mut rng = rand::thread_rng();
-
-		let v_norm = rng.gen_range(Self::SPEED_RANGE);
-		let v_deg = rng.gen_range(0.0..TAU);
+		let v_norm = rng_do(|rng| rng.gen_range(Self::SPEED_RANGE));
+		let v_deg = rng_do(|rng| rng.gen_range(0.0..TAU));
 
 		Self { pos:    big_rocket.pos,
 		       mas:    Self::MASS,
@@ -145,7 +144,7 @@ struct Glitters {
 }
 
 impl Glitters {
-	fn new(cnt: u32, size: &impl arg::CanvasSize) -> Self {
+	fn new() -> Self {
 		Self { big_rockets:   Vec::new(),
 		       small_rockets: Vec::new(),
 		       particles:     Vec::new(), }
