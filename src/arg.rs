@@ -6,7 +6,7 @@ pub(crate) const G_PHY: f64 = 9.8;
 /// 阻力常数
 pub(crate) const DRAG_PHY: f64 = 0.1;
 
-impl crate::BigRocket {
+impl crate::rocket::BigRocket {
 	/// 颜色范围: RGB
 	pub(crate) const COLOR_RANGE: (RangeInclusive<u8>, RangeInclusive<u8>, RangeInclusive<u8>) =
 		(0..=255, 0..=255, 0..=255);
@@ -20,7 +20,7 @@ impl crate::BigRocket {
 	pub(crate) const TRAIL_SPREAD: f64 = 0.5;
 }
 
-impl crate::SmallRocket {
+impl crate::rocket::SmallRocket {
 	/// 寿命
 	pub(crate) const AGE: f64 = 3.;
 	/// 质量
@@ -31,7 +31,7 @@ impl crate::SmallRocket {
 	pub(crate) const TRAIL_SPREAD: f64 = 1.;
 }
 
-impl crate::Particle {
+impl crate::rocket::Particle {
 	/// 寿命
 	pub(crate) const AGE: f64 = 1.;
 }
