@@ -3,6 +3,7 @@ use std::ops::{Add, AddAssign, Mul};
 
 use colorsys::Rgb;
 use rand::{self, Rng};
+
 mod arg;
 use arg::*;
 
@@ -107,25 +108,25 @@ impl BigRocket {
 		}
 
 		for _ in 0..cnt {
-			dst.push(SmallRocket::new(self.pos, self.color.clone()));
+			dst.push(SmallRocket::from_big_rocket(self));
 		}
 		return true;
 	}
 }
 
 impl SmallRocket {
-	fn new(pos: Vec2f, color: Rgb) -> Self {
+	fn from_big_rocket(big_rocket: &BigRocket) -> Self {
 		let mut rng = rand::thread_rng();
 
 		let v_norm = rng.gen_range(Self::SPEED_RANGE);
 		let v_deg = rng.gen_range(0.0..TAU);
 
-		Self { pos,
-		       mas: Self::MASS,
-		       vel: Vec2(v_deg.cos(), v_deg.sin()) * v_norm,
-		       color,
+		Self { pos:    big_rocket.pos,
+		       mas:    Self::MASS,
+		       vel:    Vec2(v_deg.cos(), v_deg.sin()) * v_norm,
+		       color:  big_rocket.color.clone(),
 		       spread: Self::TRAIL_SPREAD,
-		       age: Self::AGE }
+		       age:    Self::AGE, }
 	}
 }
 
@@ -145,15 +146,24 @@ struct Particle {
 }
 
 impl Particle {
-	fn new(pos: Vec2f, color: Rgb, size: &impl CanvasSize) -> Self {
-		let p_x = (pos.0 as i32).clamp(0, size.width() as i32);
-		let p_y = (pos.1 as i32).clamp(0, size.height() as i32);
+	fn from_big_rocket(big_rocket: &BigRocket, size: &impl CanvasSize) -> Self {
+		let p_x = (big_rocket.pos.0 as i32).clamp(0, size.width() as i32);
+		let p_y = (big_rocket.pos.1 as i32).clamp(0, size.height() as i32);
+
+		Self { pos:   Vec2(p_x, p_y),
+		       color: big_rocket.color.clone(),
+		       age:   Self::AGE, }
+	}
+
+	fn from_small_rocket(small_rocket: &SmallRocket, size: &impl CanvasSize) -> Self {
+		let p_x = (small_rocket.pos.0 as i32).clamp(0, size.width() as i32);
+		let p_y = (small_rocket.pos.1 as i32).clamp(0, size.height() as i32);
 
 		// todo: 提高明度
 
-		Self { pos: Vec2(p_x, p_y),
-		       color,
-		       age: Self::AGE }
+		Self { pos:   Vec2(p_x, p_y),
+		       color: small_rocket.color.clone(),
+		       age:   Self::AGE, }
 	}
 }
 
@@ -165,19 +175,18 @@ struct Glitters {
 }
 
 impl Glitters {
-	/// 燃放 `cnt` 数量的烟花, 开始模拟
 	fn new(cnt: u32, size: &impl arg::CanvasSize) -> Self {
-		let mut big_rockets: Vec<BigRocket> = Vec::new();
-		for _ in 0..cnt {
-			big_rockets.push(BigRocket::launch(size));
-		}
-
-		Self { big_rockets,
+		Self { big_rockets:   Vec::new(),
 		       small_rockets: Vec::new(),
-		       particles: Vec::new() }
+		       particles:     Vec::new(), }
 	}
 
-	fn update(&mut self, dt: f64) {
+	/// 烟花的更新
+	///
+	/// - 大小烟花的运动
+	/// - 大烟花的爆炸
+	/// - 删除超出寿命的小烟花
+	fn update_rockets(&mut self, dt: f64) {
 		// 删除气数已尽的小烟花
 		self.small_rockets.retain(|x| x.age > 0.);
 
