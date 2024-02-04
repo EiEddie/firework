@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-// TODO
-
 use std::f64::consts::TAU;
 
 use colorsys::Rgb;
@@ -103,7 +100,7 @@ impl SmallRocket {
 ///
 /// 可显示在屏幕上
 #[derive(Debug)]
-pub(crate) struct Particle {
+pub struct Particle {
 	/// 位置
 	pos: Vec2i,
 
@@ -115,6 +112,14 @@ pub(crate) struct Particle {
 }
 
 impl Particle {
+	pub fn pos(&self) -> Vec2i {
+		self.pos
+	}
+
+	pub fn color(&self) -> Rgb {
+		self.color.clone()
+	}
+
 	fn from_big_rocket(big_rocket: &BigRocket, size: &impl CanvasSize) -> Self {
 		// 逆时针旋转 90 deg 的速度
 		let v_ver = Vec2(big_rocket.vel.1, -big_rocket.vel.0);
@@ -157,17 +162,22 @@ impl Particle {
 }
 
 /// 管理和更新所有可见粒子与烟花
-struct Glitters {
+pub struct Glitters {
 	big_rockets:   Vec<BigRocket>,
 	small_rockets: Vec<SmallRocket>,
 	particles:     Vec<Particle>,
 }
 
 impl Glitters {
-	fn new() -> Self {
+	pub fn new() -> Self {
 		Self { big_rockets:   Vec::new(),
 		       small_rockets: Vec::new(),
 		       particles:     Vec::new(), }
+	}
+
+	/// 发射一枚大火箭
+	pub fn launch(&mut self, size: &impl arg::CanvasSize) {
+		self.big_rockets.push(BigRocket::launch(size));
 	}
 
 	/// 烟花的更新
@@ -177,12 +187,11 @@ impl Glitters {
 	/// - 大烟花的爆炸:
 	///   爆炸后移除此烟花, 并生成若干个小烟花
 	/// - 删除超出寿命的小烟花
-	fn update_rockets(&mut self, dt: f64) {
+	pub fn update_rockets(&mut self, dt: f64) {
 		// 删除气数已尽的小烟花
 		self.small_rockets.retain(|x| x.age > 0.);
 
 		// 移除符合条件的爆炸的大烟花
-		// FIXME: 注意测试
 		self.big_rockets
 		    .retain(|x| !x.explode(30, &mut self.small_rockets));
 
@@ -202,8 +211,6 @@ impl Glitters {
 
 			srkt.age -= dt;
 		}
-
-		// todo: 生成可见元素
 	}
 
 	/// 可见粒子的更新
@@ -214,7 +221,7 @@ impl Glitters {
 	///   删除超出寿命的粒子
 	/// - 小火箭尾迹的淡出:
 	///   临近寿命的小火箭会更少地生成粒子
-	fn update_glitters(&mut self, dt: f64, size: &impl arg::CanvasSize) {
+	pub fn update_glitters(&mut self, dt: f64, size: &impl arg::CanvasSize) {
 		// 更新尾迹寿命
 		// 移除超出寿命的尾迹
 		self.particles.retain(|x| x.age > 0.);
@@ -240,7 +247,7 @@ impl Glitters {
 		}
 	}
 
-	fn iter(&self) -> std::slice::Iter<'_, Particle> {
+	pub fn iter(&self) -> std::slice::Iter<'_, Particle> {
 		self.particles.iter()
 	}
 }

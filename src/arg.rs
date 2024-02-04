@@ -36,7 +36,7 @@ impl crate::rocket::Particle {
 	pub(crate) const AGE: f64 = 1.;
 }
 
-pub(crate) trait CanvasSize {
+pub trait CanvasSize {
 	fn width(&self) -> u32;
 	fn height(&self) -> u32;
 }

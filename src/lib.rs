@@ -1,5 +1,6 @@
-mod arg;
-mod rocket;
+pub mod arg;
+pub mod rocket;
+pub mod time;
 
 use std::cell::{RefCell, RefMut};
 
@@ -26,7 +27,7 @@ fn rng_do<F, R>(f: F) -> R
 use std::ops::{Add, AddAssign, Mul};
 
 #[derive(Debug, Clone, Copy)]
-struct Vec2<T: Copy>(T, T);
+pub struct Vec2<T: Copy>(T, T);
 
 type Vec2f = Vec2<f64>;
 type Vec2i = Vec2<i32>;
@@ -52,4 +53,18 @@ impl AddAssign for Vec2<f64> {
 		self.0 += rhs.0;
 		self.1 += rhs.1;
 	}
+}
+
+impl std::fmt::Display for Vec2<f64> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({:.3}, {:.3})", self.0, self.1)?;
+		Ok(())
+    }
+}
+
+impl std::fmt::Display for Vec2<i32> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({:>3}, {:>3})", self.0, self.1)?;
+		Ok(())
+    }
 }

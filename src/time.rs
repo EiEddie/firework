@@ -1,7 +1,7 @@
 // use rand::{rngs::ThreadRng, thread_rng, Rng};
 use std::time::Instant;
 
-struct Timer {
+pub struct Timer {
 	start_instant: Instant,
 
 	since_start_time: f64,
@@ -11,7 +11,7 @@ struct Timer {
 }
 
 impl Timer {
-	fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
 			start_instant: Instant::now(),
 			since_start_time: 0.,
@@ -26,7 +26,7 @@ impl Timer {
 	/// # Returns
 	///
 	/// 返回自上次标记到这次标记之间的时间
-	fn mark_frame(&mut self) -> f64 {
+	pub fn mark_frame(&mut self) -> f64 {
 		let last_since_start_time = self.since_start_time;
 		self.since_start_time = self.start_instant.elapsed().as_secs_f64();
 		self.prev_dalta_time = self.since_start_time - last_since_start_time;
@@ -34,11 +34,11 @@ impl Timer {
 		return self.prev_dalta_time;
 	}
 
-	fn delta(&self) -> f64 {
+	pub fn delta(&self) -> f64 {
 		return self.prev_dalta_time;
 	}
 
-	fn frame_cnt(&self) -> u128 {
+	pub fn frame_cnt(&self) -> u128 {
 		return self.fps_frame_cnt;
 	}
 
@@ -52,7 +52,7 @@ impl Timer {
 	// }
 }
 
-struct Ticker {
+pub struct Ticker {
 	start_instant:    Instant,
 	since_start_time: f64,
 
@@ -61,14 +61,14 @@ struct Ticker {
 }
 
 impl Ticker {
-	fn new(freq: f64) -> Self {
+	pub fn new(freq: f64) -> Self {
 		Self { start_instant:    Instant::now(),
 		       since_start_time: 0.,
 		       given_delta_time: 1. / freq,
 		       since_last_time:  0., }
 	}
 
-	fn ticker(&mut self) -> Option<f64> {
+	pub fn ticker(&mut self) -> Option<f64> {
 		let last_since_start_time = self.since_start_time;
 		self.since_start_time = self.start_instant.elapsed().as_secs_f64();
 		self.since_last_time += self.since_start_time - last_since_start_time;
