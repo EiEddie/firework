@@ -221,9 +221,9 @@ impl Glitters {
 		for srkt in &mut self.small_rockets {
 			srkt.pos += srkt.vel * dt;
 			// 小烟花受阻力:
-			// f = -kv => ma = -g - kv => v = v_0 + (-g/m - k/m*v)*dt
+			// f = -kv => ma = -mg - kv => v = v_0 + (-g - k/m*v)*dt
 			let a_f = srkt.vel * (-DRAG_PHY / srkt.mas);
-			srkt.vel += (Vec2(0., -G_PHY / srkt.mas) + a_f) * dt;
+			srkt.vel += (Vec2(0., -G_PHY) + a_f) * dt;
 
 			srkt.age -= dt;
 		}
