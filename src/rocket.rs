@@ -116,8 +116,18 @@ pub(crate) struct Particle {
 
 impl Particle {
 	fn from_big_rocket(big_rocket: &BigRocket, size: &impl CanvasSize) -> Self {
-		let p_x = (big_rocket.pos.0 as i32).clamp(0, size.width() as i32);
-		let p_y = (big_rocket.pos.1 as i32).clamp(0, size.height() as i32);
+		// 逆时针旋转 90 deg 的速度
+		let v_ver = Vec2(big_rocket.vel.1, -big_rocket.vel.0);
+
+		// 归一化后乘 轨迹扩散的范围 得到坐标的偏移量
+		let p_delta = v_ver
+		              * (1. / (v_ver.0.powi(2) + v_ver.1.powi(2)).sqrt()
+		                 * rng_do(|rng| rng.gen_range(-big_rocket.spread..big_rocket.spread)));
+
+		let p = p_delta + big_rocket.pos;
+
+		let p_x = (p.0 as i32).clamp(0, size.width() as i32);
+		let p_y = (p.1 as i32).clamp(0, size.height() as i32);
 
 		Self { pos:   Vec2(p_x, p_y),
 		       color: big_rocket.color.clone(),
@@ -125,10 +135,20 @@ impl Particle {
 	}
 
 	fn from_small_rocket(small_rocket: &SmallRocket, size: &impl CanvasSize) -> Self {
-		let p_x = (small_rocket.pos.0 as i32).clamp(0, size.width() as i32);
-		let p_y = (small_rocket.pos.1 as i32).clamp(0, size.height() as i32);
+		// 逆时针旋转 90 deg 的速度
+		let v_ver = Vec2(small_rocket.vel.1, -small_rocket.vel.0);
 
-		// todo: 提高明度
+		// 归一化后乘 轨迹扩散的范围 得到坐标的偏移量
+		let p_delta = v_ver
+		              * (1. / (v_ver.0.powi(2) + v_ver.1.powi(2)).sqrt()
+		                 * rng_do(|rng| rng.gen_range(-small_rocket.spread..small_rocket.spread)));
+
+		let p = p_delta + small_rocket.pos;
+
+		let p_x = (p.0 as i32).clamp(0, size.width() as i32);
+		let p_y = (p.1 as i32).clamp(0, size.height() as i32);
+
+		// TODO: 随寿命降低, 发出的光逐渐变暗
 
 		Self { pos:   Vec2(p_x, p_y),
 		       color: small_rocket.color.clone(),
@@ -152,8 +172,10 @@ impl Glitters {
 
 	/// 烟花的更新
 	///
+	/// - 大小烟花寿命的减少
 	/// - 大小烟花的运动
-	/// - 大烟花的爆炸
+	/// - 大烟花的爆炸:
+	///   爆炸后移除此烟花, 并生成若干个小烟花
 	/// - 删除超出寿命的小烟花
 	fn update_rockets(&mut self, dt: f64) {
 		// 删除气数已尽的小烟花
@@ -182,5 +204,43 @@ impl Glitters {
 		}
 
 		// todo: 生成可见元素
+	}
+
+	/// 可见粒子的更新
+	///
+	/// - 减少粒子的寿命
+	/// - 生成大小火箭的尾迹
+	/// - 尾迹的消失:
+	///   删除超出寿命的粒子
+	/// - 小火箭尾迹的淡出:
+	///   临近寿命的小火箭会更少地生成粒子
+	fn update_glitters(&mut self, dt: f64, size: &impl arg::CanvasSize) {
+		// 更新尾迹寿命
+		// 移除超出寿命的尾迹
+		self.particles.retain(|x| x.age > 0.);
+
+		// 为大火箭生成尾迹
+		for brkt in &self.big_rockets {
+			self.particles.push(Particle::from_big_rocket(brkt, size));
+		}
+
+		// 为小火箭生成尾迹
+		for srkt in &self.small_rockets {
+			// 根据给定的函数对应的概率生成
+			// 当火箭寿命将尽时, 将生成更少的尾迹
+			// TODO: 先判断寿命是否大于 1 可以减少平方根的开销
+			if rng_do(|rng| rng.gen::<f64>()) < srkt.age.sqrt().clamp(0., 1.) {
+				self.particles.push(Particle::from_small_rocket(srkt, size));
+			}
+		}
+
+		// 减少粒子寿命
+		for part in &mut self.particles {
+			part.age -= dt;
+		}
+	}
+
+	fn iter(&self) -> std::slice::Iter<'_, Particle> {
+		self.particles.iter()
 	}
 }
