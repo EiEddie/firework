@@ -1,22 +1,23 @@
-use std::f64::consts::TAU;
+use std::f64::consts::PI;
 
-use colorsys::Rgb;
+use colorsys::{Rgb, Hsl};
 use rand::Rng;
 
 use crate::arg::{self, *};
-use crate::{rng_do, Vec2, Vec2f, Vec2i};
+use crate::{rng_do, Vec2, Vec2f, Vec2u};
 
 #[derive(Debug)]
 pub(crate) struct BigRocket {
 	/// 位置
 	pos: Vec2f,
 	/// 质量
+	#[allow(dead_code)]
 	mas: f64,
 	/// 速度
 	vel: Vec2f,
 
 	/// 颜色
-	color: Rgb,
+	color: Hsl,
 
 	/// 扩散范围
 	/// 可以制作模糊的轨迹
@@ -33,7 +34,7 @@ pub(crate) struct SmallRocket {
 	vel: Vec2f,
 
 	/// 颜色
-	color: Rgb,
+	color: Hsl,
 
 	/// 扩散范围
 	/// 可以制作模糊的轨迹
@@ -45,7 +46,7 @@ pub(crate) struct SmallRocket {
 
 impl BigRocket {
 	fn launch(size: &impl arg::CanvasSize) -> Self {
-		let p_x = rng_do(|rng| rng.gen_range(0.0..size.width() as f64));
+		let p_x = rng_do(|rng| rng.gen_range(0.0..size.phy_width() as f64));
 
 		let v_x = rng_do(|rng| rng.gen_range(Self::SPEED_RANGE_X));
 		let v_y = rng_do(|rng| rng.gen_range(Self::SPEED_RANGE_Y));
@@ -57,7 +58,7 @@ impl BigRocket {
 		Self { pos:    Vec2(p_x, 0.),
 		       mas:    Self::MASS,
 		       vel:    Vec2(v_x, v_y),
-		       color:  Rgb::from((c_r, c_g, c_b)),
+		       color:  Rgb::from((c_r, c_g, c_b)).into(),
 		       spread: Self::TRAIL_SPREAD, }
 	}
 
@@ -85,7 +86,12 @@ impl BigRocket {
 impl SmallRocket {
 	fn from_big_rocket(big_rocket: &BigRocket) -> Self {
 		let v_norm = rng_do(|rng| rng.gen_range(Self::SPEED_RANGE));
-		let v_deg = rng_do(|rng| rng.gen_range(0.0..TAU));
+
+		// 避免烟花向底部炸开, 圆形底部留出一个扇形空间
+		// 扇形里面将不会出现烟花
+		// 扇形的弧度
+		let n_deg = PI/8.;
+		let v_deg = rng_do(|rng| rng.gen_range((n_deg - PI)/2.0..(3.*PI-n_deg)/2.0));
 
 		Self { pos:    big_rocket.pos,
 		       mas:    Self::MASS,
@@ -102,25 +108,23 @@ impl SmallRocket {
 #[derive(Debug)]
 pub struct Particle {
 	/// 位置
-	pos: Vec2i,
+	pos: Vec2u,
 
 	/// 颜色
-	color: Rgb,
+	color: Hsl,
 
 	/// 持续时间
 	age: f64,
 }
 
 impl Particle {
-	pub fn pos(&self) -> Vec2i {
+	pub fn pos(&self) -> Vec2u {
 		self.pos
 	}
 
 	pub fn color(&self) -> Rgb {
-		self.color.clone()
+		self.color.clone().into()
 	}
-
-	// FIXME: 物理坐标系和显示坐标系不一致, 物理坐标系原点在左下角, 而显示坐标系在左上角
 
 	fn try_from_big_rocket(big_rocket: &BigRocket, size: &impl CanvasSize) -> Option<Self> {
 		// 逆时针旋转 90 deg 的速度
@@ -133,18 +137,11 @@ impl Particle {
 
 		let p = p_delta + big_rocket.pos;
 
-		let p_x = p.0 as i32;
-		if 0 > p_x || p_x > size.width() as i32 {
-			return None;
-		}
+		let mut color = big_rocket.color.clone();
+		color.set_lightness(90.);
 
-		let p_y = p.1 as i32;
-		if 0 > p_y || p_y > size.height() as i32 {
-			return None;
-		}
-
-		Some(Self { pos:   Vec2(p_x, p_y),
-		            color: big_rocket.color.clone(),
+		Some(Self { pos:   size.to_col_and_row(&p)?,
+		            color,
 		            age:   Self::AGE, })
 	}
 
@@ -159,20 +156,13 @@ impl Particle {
 
 		let p = p_delta + small_rocket.pos;
 
-		let p_x = p.0 as i32;
-		if 0 > p_x || p_x > size.width() as i32 {
-			return None;
-		}
+		// l 范围: [60, 95]
+		// 使用线性插值算法
+		let mut color = small_rocket.color.clone();
+		color.set_lightness(60. + (95. - 60.) * (small_rocket.age / SmallRocket::AGE));
 
-		let p_y = p.1 as i32;
-		if 0 > p_y || p_y > size.height() as i32 {
-			return None;
-		}
-
-		// TODO: 随寿命降低, 发出的光逐渐变暗
-
-		Some(Self { pos:   Vec2(p_x, p_y),
-		            color: small_rocket.color.clone(),
+		Some(Self { pos:   size.to_col_and_row(&p)?,
+		            color,
 		            age:   Self::AGE, })
 	}
 }
@@ -209,7 +199,7 @@ impl Glitters {
 
 		// 移除符合条件的爆炸的大烟花
 		self.big_rockets
-		    .retain(|x| !x.explode(30, &mut self.small_rockets));
+		    .retain(|x| !x.explode(25, &mut self.small_rockets));
 
 		// 大烟花的运动
 		for brkt in &mut self.big_rockets {
@@ -225,12 +215,16 @@ impl Glitters {
 			let a_f = srkt.vel * (-DRAG_PHY / srkt.mas);
 			srkt.vel += (Vec2(0., -G_PHY) + a_f) * dt;
 
-			srkt.age -= dt;
+			// 烟花速度越快, 温度衰减越快, 寿命越低
+			// 所以速度快的烟花的寿命会更快耗尽
+			let k = 0.1;
+			srkt.age -= k* (srkt.vel.0.powi(2)+srkt.vel.1.powi(2)).sqrt() * dt;
 		}
 	}
 
 	/// 可见粒子寿命的更新
 	///
+	/// - 尾迹逐渐变暗
 	/// - 减少粒子的寿命
 	/// - 尾迹的消失:
 	///   删除超出寿命的粒子
@@ -241,6 +235,9 @@ impl Glitters {
 		// 减少粒子寿命
 		for part in &mut self.particles {
 			part.age -= dt;
+
+			let k = 150.;
+			part.color.set_lightness(part.color.lightness() - k*(-part.age).exp()*dt);
 		}
 	}
 

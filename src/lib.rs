@@ -27,10 +27,10 @@ fn rng_do<F, R>(f: F) -> R
 use std::ops::{Add, AddAssign, Mul};
 
 #[derive(Debug, Clone, Copy)]
-pub struct Vec2<T: Copy>(T, T);
+pub struct Vec2<T: Copy>(pub T, pub T);
 
-type Vec2f = Vec2<f64>;
-type Vec2i = Vec2<i32>;
+pub type Vec2f = Vec2<f64>;
+pub type Vec2u = Vec2<u32>;
 
 impl Mul<f64> for Vec2<f64> {
 	type Output = Self;
