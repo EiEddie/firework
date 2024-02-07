@@ -15,20 +15,20 @@ impl crate::rocket::BigRocket {
 	/// 质量
 	pub(crate) const MASS: f64 = 50.;
 	/// 水平初速度的范围
-	pub(crate) const SPEED_RANGE_X: Range<f64> = -5.0..5.0;
+	pub(crate) const SPEED_RANGE_X: Range<f64> = -2.0..2.0;
 	/// 竖直初速度的范围
-	pub(crate) const SPEED_RANGE_Y: Range<f64> = 20.0..55.0;
+	pub(crate) const SPEED_RANGE_Y: Range<f64> = 20.0..25.0;
 	/// 轨迹扩散的范围
 	pub(crate) const TRAIL_SPREAD: f64 = 0.5;
 }
 
 impl crate::rocket::SmallRocket {
 	/// 寿命
-	pub(crate) const AGE: f64 = 3.;
+	pub(crate) const AGE: f64 = 1.5;
 	/// 质量
 	pub(crate) const MASS: f64 = 1.;
 	/// 初速度的范围
-	pub(crate) const SPEED_RANGE: Range<f64> = 5.0..150.0;
+	pub(crate) const SPEED_RANGE: Range<f64> = 5.0..10.0;
 	/// 轨迹扩散的范围
 	pub(crate) const TRAIL_SPREAD: f64 = 1.;
 }
