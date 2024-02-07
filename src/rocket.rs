@@ -1,10 +1,10 @@
 use std::f64::consts::PI;
 
-use colorsys::{Rgb, Hsl};
+use colorsys::{Hsl, Rgb};
 use rand::Rng;
 
-use crate::arg::{self, *};
-use crate::{rng_do, Vec2, Vec2f, Vec2u};
+use crate::arg::*;
+use crate::{rng_do, CanvasSize, Vec2, Vec2f, Vec2u};
 
 #[derive(Debug)]
 pub(crate) struct BigRocket {
@@ -45,7 +45,7 @@ pub(crate) struct SmallRocket {
 }
 
 impl BigRocket {
-	fn launch(size: &impl arg::CanvasSize) -> Self {
+	fn launch(size: &impl CanvasSize) -> Self {
 		let p_x = rng_do(|rng| rng.gen_range(0.0..size.phy_width() as f64));
 
 		let v_x = rng_do(|rng| rng.gen_range(Self::SPEED_RANGE_X));
@@ -87,11 +87,12 @@ impl SmallRocket {
 	fn from_big_rocket(big_rocket: &BigRocket) -> Self {
 		let v_norm = rng_do(|rng| rng.gen_range(Self::SPEED_RANGE));
 
-		// 避免烟花向底部炸开, 圆形底部留出一个扇形空间
-		// 扇形里面将不会出现烟花
-		// 扇形的弧度
-		let n_deg = PI/8.;
-		let v_deg = rng_do(|rng| rng.gen_range((n_deg - PI)/2.0..(3.*PI-n_deg)/2.0));
+		let v_deg = rng_do(|rng| {
+			rng.gen_range(
+			              (Self::EXPLODE_EXCLUDE_ANGLE - PI) / 2.0
+			              ..(3. * PI - Self::EXPLODE_EXCLUDE_ANGLE) / 2.0,
+			)
+		});
 
 		Self { pos:    big_rocket.pos,
 		       mas:    Self::MASS,
@@ -140,9 +141,9 @@ impl Particle {
 		let mut color = big_rocket.color.clone();
 		color.set_lightness(90.);
 
-		Some(Self { pos:   size.to_col_and_row(&p)?,
+		Some(Self { pos: size.to_col_and_row(&p)?,
 		            color,
-		            age:   Self::AGE, })
+		            age: Self::AGE })
 	}
 
 	fn try_from_small_rocket(small_rocket: &SmallRocket, size: &impl CanvasSize) -> Option<Self> {
@@ -161,9 +162,9 @@ impl Particle {
 		let mut color = small_rocket.color.clone();
 		color.set_lightness(60. + (95. - 60.) * (small_rocket.age / SmallRocket::AGE));
 
-		Some(Self { pos:   size.to_col_and_row(&p)?,
+		Some(Self { pos: size.to_col_and_row(&p)?,
 		            color,
-		            age:   Self::AGE, })
+		            age: Self::AGE })
 	}
 }
 
@@ -182,7 +183,7 @@ impl Glitters {
 	}
 
 	/// 发射一枚大火箭
-	pub fn launch(&mut self, size: &impl arg::CanvasSize) {
+	pub fn launch(&mut self, size: &impl CanvasSize) {
 		self.big_rockets.push(BigRocket::launch(size));
 	}
 
@@ -199,7 +200,7 @@ impl Glitters {
 
 		// 移除符合条件的爆炸的大烟花
 		self.big_rockets
-		    .retain(|x| !x.explode(25, &mut self.small_rockets));
+		    .retain(|x| !x.explode(SmallRocket::EXPLODE_ROCKET_CNT, &mut self.small_rockets));
 
 		// 大烟花的运动
 		for brkt in &mut self.big_rockets {
@@ -218,7 +219,7 @@ impl Glitters {
 			// 烟花速度越快, 温度衰减越快, 寿命越低
 			// 所以速度快的烟花的寿命会更快耗尽
 			let k = 0.1;
-			srkt.age -= k* (srkt.vel.0.powi(2)+srkt.vel.1.powi(2)).sqrt() * dt;
+			srkt.age -= k * (srkt.vel.0.powi(2) + srkt.vel.1.powi(2)).sqrt() * dt;
 		}
 	}
 
@@ -237,7 +238,8 @@ impl Glitters {
 			part.age -= dt;
 
 			let k = 150.;
-			part.color.set_lightness(part.color.lightness() - k*(-part.age).exp()*dt);
+			part.color
+			    .set_lightness(part.color.lightness() - k * (-part.age).exp() * dt);
 		}
 	}
 
@@ -246,7 +248,7 @@ impl Glitters {
 	/// - 生成大小火箭的尾迹
 	/// - 小火箭尾迹的淡出:
 	///   临近寿命的小火箭会更少地生成粒子
-	pub fn gen_glitters(&mut self, size: &impl arg::CanvasSize) {
+	pub fn gen_glitters(&mut self, size: &impl CanvasSize) {
 		// 为小火箭生成尾迹
 		for srkt in &self.small_rockets {
 			// 根据给定的函数对应的概率生成

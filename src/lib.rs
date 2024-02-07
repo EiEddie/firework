@@ -68,3 +68,36 @@ impl std::fmt::Display for Vec2<i32> {
 		Ok(())
 	}
 }
+
+pub trait CanvasSize {
+	fn width(&self) -> u32;
+	fn height(&self) -> u32;
+
+	fn phy_width(&self) -> f64 {
+		self.width() as f64 / 2.
+	}
+
+	fn phy_height(&self) -> f64 {
+		self.height() as f64
+	}
+
+	/// 从物理模拟的坐标位置转换为在终端上显示的列和行
+	///
+	/// - 将 `y` 轴倒置:
+	///   因为物理坐标系原点在左下角, 而终端的原点在左上角
+	/// - `x` 轴拉伸一倍:
+	///   因为终端中一个字符的宽为高的 1/2
+	fn to_col_and_row(&self, pos: &Vec2f) -> Option<Vec2u> {
+		let p_x = (pos.0 * 2.).round();
+		if 0. > p_x || p_x > self.width() as f64 - 1. {
+			return None;
+		}
+
+		let p_y = self.height() as f64 - pos.1.round();
+		if 0. > p_y || p_y > self.height() as f64 - 1. {
+			return None;
+		}
+
+		Some(Vec2(p_x as u32, p_y as u32))
+	}
+}

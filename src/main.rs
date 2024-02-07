@@ -8,7 +8,7 @@ use firework::*;
 
 struct CSize {}
 
-impl arg::CanvasSize for CSize {
+impl CanvasSize for CSize {
 	fn width(&self) -> u32 {
 		terminal::size().unwrap().0 as u32
 	}
@@ -23,10 +23,10 @@ static SIZE: CSize = CSize {};
 fn mainloop(out: &mut impl io::Write) {
 	let mut timer = time::Timer::new();
 
-	// 控制每 1 秒就有一个火箭升空的计时器
-	let mut launch_ticker = time::Ticker::new(1.);
-	// 控制每个烟花每秒产生 50 个粒子的计时器
-	let mut glitter_ticker = time::Ticker::new(50.);
+	// 控制火箭升空的计时器
+	let mut launch_ticker = time::Ticker::new(arg::BIG_ROCKET_LAUNCH_FREQ);
+	// 控制烟花产生粒子的计时器
+	let mut glitter_ticker = time::Ticker::new(arg::GLITTER_GENERATE_FREQ);
 
 	// 烟花粒子及所有火箭的管理器
 	let mut glitters = rocket::Glitters::new();
@@ -34,7 +34,7 @@ fn mainloop(out: &mut impl io::Write) {
 	loop {
 		// FIXME: 闪屏
 
-		if event::poll(Duration::from_secs_f64(1./60.)).unwrap() {
+		if event::poll(Duration::from_secs_f64(1. / arg::FPS)).unwrap() {
 			if let Event::Key(KeyEvent { code, .. }) = event::read().unwrap() {
 				match code {
 					KeyCode::Esc => {
@@ -63,7 +63,7 @@ fn mainloop(out: &mut impl io::Write) {
 			let _ = queue!(
 				out,
 				cursor::MoveTo(part.pos().0 as u16, part.pos().1 as u16),
-				style::Print("█".with(style::Color::Rgb {
+				style::Print(arg::DISPLAY_CHAR.with(style::Color::Rgb {
 					r: part.color().red() as u8,
 					g: part.color().green() as u8,
 					b: part.color().blue() as u8,
@@ -79,17 +79,17 @@ fn main() {
 	let mut stdout = io::stdout();
 	let _ = terminal::enable_raw_mode();
 	let _ = execute!(
-		&mut stdout,
-		terminal::EnterAlternateScreen,
-		cursor::Hide,
-		terminal::Clear(terminal::ClearType::All)
+	                 &mut stdout,
+	                 terminal::EnterAlternateScreen,
+	                 cursor::Hide,
+	                 terminal::Clear(terminal::ClearType::All)
 	);
 	mainloop(&mut stdout);
 	let _ = execute!(
-		&mut stdout,
-		style::ResetColor,
-		cursor::Show,
-		terminal::LeaveAlternateScreen
+	                 &mut stdout,
+	                 style::ResetColor,
+	                 cursor::Show,
+	                 terminal::LeaveAlternateScreen
 	);
 	let _ = terminal::disable_raw_mode();
 }
