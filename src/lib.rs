@@ -26,7 +26,7 @@ fn rng_do<F, R>(f: F) -> R
 
 use std::ops::{Add, AddAssign, Mul};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq)]
 pub struct Vec2<T: Copy>(pub T, pub T);
 
 pub type Vec2f = Vec2<f64>;
@@ -52,6 +52,30 @@ impl AddAssign for Vec2<f64> {
 	fn add_assign(&mut self, rhs: Self) {
 		self.0 += rhs.0;
 		self.1 += rhs.1;
+	}
+}
+
+impl<T: Eq + Copy> Eq for Vec2<T> {}
+
+impl PartialOrd for Vec2<u32> {
+	/// # Warning
+	///
+	/// 判断顺序为 先 `y` 后 `x`
+	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+		match self.1.partial_cmp(&other.1) {
+			Some(core::cmp::Ordering::Equal) => {},
+			ord => return ord,
+		}
+		self.0.partial_cmp(&other.0)
+	}
+}
+
+impl Ord for Vec2<u32> {
+	/// # Warning
+	///
+	/// 判断顺序为 先 `y` 后 `x`
+	fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+		self.partial_cmp(other).unwrap()
 	}
 }
 

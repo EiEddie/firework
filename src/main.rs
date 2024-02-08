@@ -32,8 +32,6 @@ fn mainloop(out: &mut impl io::Write) {
 	let mut glitters = rocket::Glitters::new();
 
 	loop {
-		// FIXME: 闪屏
-
 		if event::poll(Duration::from_secs_f64(1. / arg::FPS)).unwrap() {
 			if let Event::Key(KeyEvent { code, .. }) = event::read().unwrap() {
 				match code {
@@ -58,16 +56,16 @@ fn mainloop(out: &mut impl io::Write) {
 			glitters.gen_glitters(&SIZE);
 		}
 
-		let _ = out.queue(terminal::Clear(terminal::ClearType::All));
-		for part in glitters.iter() {
+		let _ = out.queue(terminal::Clear(terminal::ClearType::Purge));
+		for (pos, color) in glitters.iter() {
 			let _ = queue!(
-				out,
-				cursor::MoveTo(part.pos().0 as u16, part.pos().1 as u16),
-				style::Print(arg::DISPLAY_CHAR.with(style::Color::Rgb {
-					r: part.color().red() as u8,
-					g: part.color().green() as u8,
-					b: part.color().blue() as u8,
-				}))
+			               out,
+			               cursor::MoveTo(pos.0 as u16, pos.1 as u16),
+			               style::Print(arg::DISPLAY_CHAR.with(
+				style::Color::Rgb { r: color.red() as u8,
+				                    g: color.green() as u8,
+				                    b: color.blue() as u8, }
+			))
 			);
 		}
 
@@ -93,18 +91,17 @@ fn mainloop(out: &mut impl io::Write) {
 }
 
 fn main() {
-	let stdout = io::stdout();
-	let mut buf = io::BufWriter::with_capacity(2 * 1024 * 1024, stdout);
+	let mut stdout = io::stdout();
 	let _ = terminal::enable_raw_mode();
 	let _ = execute!(
-	                 &mut buf,
+	                 &mut stdout,
 	                 terminal::EnterAlternateScreen,
 	                 cursor::Hide,
 	                 terminal::Clear(terminal::ClearType::All)
 	);
-	mainloop(&mut buf);
+	mainloop(&mut stdout);
 	let _ = execute!(
-	                 &mut buf,
+	                 &mut stdout,
 	                 style::ResetColor,
 	                 cursor::Show,
 	                 terminal::LeaveAlternateScreen

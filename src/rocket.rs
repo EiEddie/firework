@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::f64::consts::PI;
 
 use colorsys::{Hsl, Rgb};
@@ -172,14 +173,20 @@ impl Particle {
 pub struct Glitters {
 	big_rockets:   Vec<BigRocket>,
 	small_rockets: Vec<SmallRocket>,
-	particles:     Vec<Particle>,
+	/// 一个有序 Map, 储存发光粒子的位置, 寿命与颜色
+	///
+	/// 0. `key`: 位置
+	/// 1. `val`: 一个 pair, 分别是
+	///     0. [`f64`] : 寿命
+	///     1. [`Hsl`] : 颜色, 以 `HSL` 色彩空间存储
+	particles:     BTreeMap<Vec2u, (f64, Hsl)>,
 }
 
 impl Glitters {
 	pub fn new() -> Self {
 		Self { big_rockets:   Vec::new(),
 		       small_rockets: Vec::new(),
-		       particles:     Vec::new(), }
+		       particles:     BTreeMap::new(), }
 	}
 
 	#[cfg(debug_assertions)]
@@ -246,15 +253,14 @@ impl Glitters {
 	///   删除超出寿命的粒子
 	pub fn update_glitters(&mut self, dt: f64) {
 		// 移除超出寿命的尾迹
-		self.particles.retain(|x| x.age > 0.);
+		self.particles.retain(|_, (age, _)| *age > 0.);
 
 		// 减少粒子寿命
-		for part in &mut self.particles {
-			part.age -= dt;
+		for (_, (age, color)) in &mut self.particles {
+			*age -= dt;
 
 			let k = 150.;
-			part.color
-			    .set_lightness(part.color.lightness() - k * (-part.age).exp() * dt);
+			color.set_lightness(color.lightness() - k * (-(*age)).exp() * dt);
 		}
 	}
 
@@ -271,7 +277,7 @@ impl Glitters {
 			// TODO: 先判断寿命是否大于 1 可以减少平方根的开销
 			if rng_do(|rng| rng.gen::<f64>()) < srkt.age.sqrt().clamp(0., 1.) {
 				if let Some(part) = Particle::try_from_small_rocket(srkt, size) {
-					self.particles.push(part);
+					self.particles.insert(part.pos, (part.age, part.color));
 				}
 			}
 		}
@@ -279,12 +285,14 @@ impl Glitters {
 		// 为大火箭生成尾迹
 		for brkt in &self.big_rockets {
 			if let Some(part) = Particle::try_from_big_rocket(brkt, size) {
-				self.particles.push(part);
+				self.particles.insert(part.pos, (part.age, part.color));
 			}
 		}
 	}
 
-	pub fn iter(&self) -> std::slice::Iter<'_, Particle> {
-		self.particles.iter()
+	pub fn iter(&self) -> impl Iterator<Item = (&Vec2u, Rgb)> {
+		self.particles
+		    .iter()
+		    .map(|(pos, (_, color))| (pos, Rgb::from(color)))
 	}
 }
