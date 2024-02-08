@@ -71,22 +71,40 @@ fn mainloop(out: &mut impl io::Write) {
 			);
 		}
 
+		#[cfg(debug_assertions)]
+		{
+			let _ = queue!(
+			               out,
+			               cursor::MoveTo(0, 0),
+			               style::Print(format!(
+				// fps; brc: big rocket count
+				// src: small rocket count; ptc: particle count
+				"fps:{:.3} brc:{:<4} src:{:<4} ptc:{:<4}",
+				1. / dt,
+				glitters.cnt_big_rocket(),
+				glitters.cnt_small_rocket(),
+				glitters.cnt_particle()
+			))
+			);
+		}
+
 		let _ = out.flush();
 	}
 }
 
 fn main() {
-	let mut stdout = io::stdout();
+	let stdout = io::stdout();
+	let mut buf = io::BufWriter::with_capacity(2 * 1024 * 1024, stdout);
 	let _ = terminal::enable_raw_mode();
 	let _ = execute!(
-	                 &mut stdout,
+	                 &mut buf,
 	                 terminal::EnterAlternateScreen,
 	                 cursor::Hide,
 	                 terminal::Clear(terminal::ClearType::All)
 	);
-	mainloop(&mut stdout);
+	mainloop(&mut buf);
 	let _ = execute!(
-	                 &mut stdout,
+	                 &mut buf,
 	                 style::ResetColor,
 	                 cursor::Show,
 	                 terminal::LeaveAlternateScreen

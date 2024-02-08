@@ -182,6 +182,21 @@ impl Glitters {
 		       particles:     Vec::new(), }
 	}
 
+	#[cfg(debug_assertions)]
+	pub fn cnt_small_rocket(&self) -> u32 {
+		self.small_rockets.len() as u32
+	}
+
+	#[cfg(debug_assertions)]
+	pub fn cnt_big_rocket(&self) -> u32 {
+		self.big_rockets.len() as u32
+	}
+
+	#[cfg(debug_assertions)]
+	pub fn cnt_particle(&self) -> u32 {
+		self.particles.len() as u32
+	}
+
 	/// 发射一枚大火箭
 	pub fn launch(&mut self, size: &impl CanvasSize) {
 		self.big_rockets.push(BigRocket::launch(size));
