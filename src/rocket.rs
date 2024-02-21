@@ -262,8 +262,9 @@ impl Glitters {
 			if *age < 0. {
 				// 粒子寿命耗尽时, 修改为与背景一致的颜色
 				// 在显示效果上与清屏无异
-				*color = Rgb::from((0, 0, 0)).into();
+				*color = Rgb::from(BACKGROUND_COLOR).into();
 			} else {
+				// TODO: 渐渐融入夜空颜色, 而非变黑
 				let k = 150.;
 				color.set_lightness(color.lightness() - k * (-(*age)).exp() * dt);
 			}

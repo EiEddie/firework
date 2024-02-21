@@ -18,6 +18,10 @@ pub const GLITTER_GENERATE_FREQ: f64 = 50.;
 /// 呈现使用的字符
 pub const DISPLAY_CHAR: char = '█';
 
+/// 背景颜色: RGB
+/// NOTE: 目前颜色只能为黑色
+pub const BACKGROUND_COLOR: (u8, u8, u8) = (0, 0, 0);
+
 /// 重力加速度 `[m/s^2]`
 pub(crate) const G_PHY: f64 = 9.8;
 

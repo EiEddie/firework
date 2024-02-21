@@ -1,6 +1,9 @@
 use std::io;
 
-use crossterm::{cursor, execute, style, terminal};
+use colorsys::Rgb;
+use crossterm::style::{self, Stylize};
+use crossterm::{cursor, execute, queue, terminal};
+use firework::arg::BACKGROUND_COLOR;
 use firework::CanvasSize;
 
 use crate::error::*;
@@ -19,6 +22,20 @@ impl CanvasSize for CSize {
 
 pub static SIZE: CSize = CSize {};
 
+fn set_background_color(out: &mut impl io::Write, color: &Rgb) -> Result<()> {
+	let color = style::Color::Rgb { r: color.red() as u8,
+	                                g: color.green() as u8,
+	                                b: color.blue() as u8, };
+	let mask = " ".repeat(SIZE.width() as usize).on(color);
+
+	for r in 0..SIZE.height() as u16 {
+		queue!(out, cursor::MoveTo(0, r), style::Print(&mask))?;
+	}
+
+	out.flush()?;
+	Ok(())
+}
+
 /// 初始化标准输出, 进入显示模式
 ///
 /// - 启用终端原始模式:
@@ -34,8 +51,8 @@ pub fn init(out: &mut impl io::Write) -> Result<()> {
 	         terminal::EnterAlternateScreen,
 	         cursor::Hide,
 	         terminal::Clear(terminal::ClearType::All),
-	         // FIXME: 设置终端背景颜色
 	)?;
+	set_background_color(out, &Rgb::from(BACKGROUND_COLOR))?;
 	Ok(())
 }
 

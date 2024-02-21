@@ -72,11 +72,14 @@ pub fn display(out: &mut impl io::Write) -> Result<()> {
 			       style::Print(format!(
 				// fps; brc: big rocket count
 				// src: small rocket count; ptc: particle count
-				"fps:{:.3} brc:{:<4} src:{:<4} ptc:{:<4}",
+				// w: width; h: height
+				"fps:{:.3} brc:{:<4} src:{:<4} ptc:{:<4}; w:{} h:{}",
 				1. / dt,
 				glitters.cnt_big_rocket(),
 				glitters.cnt_small_rocket(),
-				glitters.cnt_particle()
+				glitters.cnt_particle(),
+				SIZE.width(),
+				SIZE.height()
 			))
 			)?;
 		}
