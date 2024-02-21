@@ -34,7 +34,7 @@ pub fn init(out: &mut impl io::Write) -> Result<()> {
 	         terminal::EnterAlternateScreen,
 	         cursor::Hide,
 	         terminal::Clear(terminal::ClearType::All),
-	         style::SetBackgroundColor(style::Color::Black)
+	         // FIXME: 设置终端背景颜色
 	)?;
 	Ok(())
 }

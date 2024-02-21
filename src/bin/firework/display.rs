@@ -51,9 +51,6 @@ pub fn display(out: &mut impl io::Write) -> Result<()> {
 		}
 
 		// 将粒子显示出来
-		// 清除屏幕
-		// WARNING: 使用 `ClearType::All` 将导致屏幕闪烁
-		out.queue(terminal::Clear(terminal::ClearType::Purge))?;
 		// 打印粒子到屏幕
 		for (pos, color) in glitters.iter() {
 			let style = style::Color::Rgb { r: color.red() as u8,

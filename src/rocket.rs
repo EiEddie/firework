@@ -259,8 +259,14 @@ impl Glitters {
 		for (_, (age, color)) in &mut self.particles {
 			*age -= dt;
 
-			let k = 150.;
-			color.set_lightness(color.lightness() - k * (-(*age)).exp() * dt);
+			if *age < 0. {
+				// 粒子寿命耗尽时, 修改为与背景一致的颜色
+				// 在显示效果上与清屏无异
+				*color = Rgb::from((0, 0, 0)).into();
+			} else {
+				let k = 150.;
+				color.set_lightness(color.lightness() - k * (-(*age)).exp() * dt);
+			}
 		}
 	}
 
